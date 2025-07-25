@@ -9,6 +9,11 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     password: str
 
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
+
 class User(UserBase):
     id: int
 
@@ -71,3 +76,16 @@ class Booking(BaseModel):
 
     class Config:
         orm_mode = True
+
+
+class BookingCreate(BaseModel):
+    user_id: int
+    show_id: int
+    seat_ids: List[int]
+
+
+class SeatStatus(BaseModel):
+    id: int
+    row: int
+    column: int
+    is_booked: bool
