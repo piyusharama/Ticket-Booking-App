@@ -45,7 +45,7 @@ def signup(user: schemas.UserCreate, db: Session = Depends(get_db)):
 
 
 @router.post("/login")
-def login(form_data: schemas.UserCreate, db: Session = Depends(get_db)):
+def login(form_data: schemas.UserLogin, db: Session = Depends(get_db)):
     user = authenticate_user(db, form_data.email, form_data.password)
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect email or password")

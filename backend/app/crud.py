@@ -23,9 +23,44 @@ def create_user(db: Session, user: schemas.UserCreate):
 def get_movies(db: Session, skip: int = 0, limit: int = 10):
     return db.query(models.Movie).offset(skip).limit(limit).all()
 
+
+def get_shows_by_movie(db: Session, movie_id: int):
+    return db.query(models.Show).filter(models.Show.movie_id == movie_id).all()
+
+
+def seats_for_show(db: Session, show_id: int):
+    show = db.query(models.Show).filter(models.Show.id == show_id).first()
+    if not show:
+        return []
+    seats = db.query(models.Seat).filter(models.Seat.screen_id == show.screen_id).all()
+    booked = (
+        db.query(models.booking_seat_association.c.seat_id)
+        .join(models.Booking, models.Booking.id == models.booking_seat_association.c.booking_id)
+        .filter(models.Booking.show_id == show_id)
+        .all()
+    )
+    booked_ids = {s[0] for s in booked}
+    return [
+        {"id": seat.id, "row": seat.row, "column": seat.column, "is_booked": seat.id in booked_ids}
+        for seat in seats
+    ]
+
 # Booking operations
 
 def create_booking(db: Session, user_id: int, show_id: int, seat_ids: list):
+    # ensure requested seats are not already booked for this show
+    taken = (
+        db.query(models.booking_seat_association.c.seat_id)
+        .join(models.Booking, models.Booking.id == models.booking_seat_association.c.booking_id)
+        .filter(
+            models.Booking.show_id == show_id,
+            models.booking_seat_association.c.seat_id.in_(seat_ids),
+        )
+        .all()
+    )
+    if taken:
+        return None
+
     db_booking = models.Booking(user_id=user_id, show_id=show_id, payment_status='confirmed')
     db.add(db_booking)
     db.commit()
